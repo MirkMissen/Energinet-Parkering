@@ -21,15 +21,8 @@ public sealed class WeeklyParkingSpot
 
     public static WeeklyParkingSpot Create(ParkingSpotId id, Week week, ParkingSpotName name) => new(id, week, name);
 
-    public void AddReservation(Reservation reservation, Date now)
-    {
-        var isInvalidDate = reservation.Date < Week.From ||
-                            reservation.Date > Week.To ||
-                            reservation.Date < now;
-        if (isInvalidDate)
-        {
-            throw new InvalidReservationDateException(reservation.Date.Value.Date);
-        }
+    public void AddReservation(Reservation reservation, Date now) {
+        ValidateReservation(reservation, now);
 
         if (_reservations.Any(x => x.Date == reservation.Date))
         {
@@ -37,5 +30,23 @@ public sealed class WeeklyParkingSpot
         }
 
         _reservations.Add(reservation);
+    }
+
+    public void UpdateReservation(Reservation reservation, Date now) {
+        ValidateReservation(reservation, now);
+        
+        this._reservations.RemoveWhere(x => x.Id.Equals(reservation.Id));
+        this._reservations.Add(reservation);
+    }
+
+    private void ValidateReservation(Reservation reservation, Date now) {
+        var isInvalidDate = reservation.Date < Week.From ||
+                            reservation.Date > Week.To ||
+                            reservation.Date < now;
+        if (isInvalidDate)
+        {
+            throw new InvalidReservationDateException(reservation.Date.Value.Date);
+        }
+        
     }
 }
