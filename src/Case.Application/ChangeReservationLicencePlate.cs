@@ -1,4 +1,5 @@
-﻿using Case.Domain.Abstractions;
+﻿using Case.Application.Exceptions;
+using Case.Domain.Abstractions;
 using Case.Domain.Repositories;
 using Case.Domain.ValueObjects;
 using MediatR;
@@ -6,8 +7,11 @@ using MediatR;
 namespace Case.Application; 
 
 public static class ChangeReservationLicencePlate {
-    
-    public sealed record Command(Guid ReservationId, string Numberplate) : IRequest;
+
+    public sealed record Command(Guid ReservationId, Guid ParkingSpotId, string Numberplate) : IRequest {
+        public Command() : this(Guid.Empty, Guid.Empty, string.Empty) { }
+        public Command(Guid ReservationId, string Numberplate) : this(ReservationId, Guid.Empty, Numberplate) { }
+    }
     
     internal class Handler : IRequestHandler<Command> {
         
@@ -20,11 +24,12 @@ public static class ChangeReservationLicencePlate {
         }
 
         public async Task<Unit> Handle(Command request, CancellationToken cancellationToken) {
+            var weeklyParkingSpot = await _repository.GetAsync(request.ParkingSpotId);
+            var reservation = weeklyParkingSpot.Reservations.SingleOrDefault(x => x.Id.Value.Equals(request.ReservationId));
 
-            var all = await this._repository.GetAllAsync();
-
-            var weeklyParkingSpot = all.Single(x => x.Reservations.Any(reservation => reservation.Id.Value.Equals(request.ReservationId)));
-            var reservation = weeklyParkingSpot.Reservations.Single(x => x.Id.Value.Equals(request.ReservationId));
+            if (reservation is null) {
+                throw new WeeklyParkingSpotReservationNotFound(request.ParkingSpotId, request.ReservationId);
+            }
             
             var updatedReservation = reservation with {
                 LicensePlate = new LicensePlate(request.Numberplate)

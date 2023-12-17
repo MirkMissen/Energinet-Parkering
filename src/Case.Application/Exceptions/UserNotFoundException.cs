@@ -1,3 +1,4 @@
+using System.Security.Principal;
 using Case.Domain.Exceptions;
 
 namespace Case.Application.Exceptions;

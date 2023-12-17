@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using Case.Application;
+using Case.Application.Exceptions;
 using Case.Tests.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -52,6 +53,18 @@ public sealed class ReservationsControllerTests : IClassFixture<OptionsProvider>
         var reservation = await GetReservation(ReservationDate, SpotId, UserId);
         reservation.LicensePlate.ShouldBe("CD67890");
     }
+    
+    [Fact]
+    public async Task Put_should_throw_exception_when_not_found()
+    {
+        //arrange
+        var unusedReservationId = Guid.Parse("11111111-0000-0000-0000-000000000001");
+        var updateReservationRequest = new ChangeReservationLicencePlate.Command(unusedReservationId, "CD67890");
+
+        //act & Assert
+        await Assert.ThrowsAsync<WeeklyParkingSpotReservationNotFound>(() =>
+            _client.PutAsJsonAsync($"/parking-spots/{SpotId}/reservations", updateReservationRequest));
+    }
 
     private async Task<GetWeeklyParkingSpots.ReservationDto>? GetReservation(DateTime date, Guid spotId, Guid userId)
     {
@@ -64,5 +77,6 @@ public sealed class ReservationsControllerTests : IClassFixture<OptionsProvider>
 
     private void ConfigureServices(IServiceCollection services)
     {
+        
     }
 }
