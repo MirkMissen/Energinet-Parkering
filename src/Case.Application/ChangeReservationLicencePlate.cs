@@ -25,6 +25,11 @@ public static class ChangeReservationLicencePlate {
 
         public async Task<Unit> Handle(Command request, CancellationToken cancellationToken) {
             var weeklyParkingSpot = await _repository.GetAsync(request.ParkingSpotId);
+
+            if (weeklyParkingSpot == null) {
+                throw new WeeklyParkingSpotNotFoundException(request.ParkingSpotId);
+            }
+            
             var reservation = weeklyParkingSpot.Reservations.SingleOrDefault(x => x.Id.Value.Equals(request.ReservationId));
 
             if (reservation is null) {
