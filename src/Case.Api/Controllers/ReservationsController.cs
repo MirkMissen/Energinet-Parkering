@@ -24,4 +24,14 @@ public class ReservationsController : ControllerBase
         });
         return NoContent();
     }
+    
+    [HttpPut("{parkingSpotId:guid}/reservations")]
+    public async Task<ActionResult> Post(Guid parkingSpotId, [FromBody]ChangeReservationLicencePlate.Command command)
+    {
+        await _mediator.Send(command with {
+            ParkingSpotId = parkingSpotId
+        });
+        return NoContent();
+    }
+    
 }

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using Case.Application;
+using Case.Application.Exceptions;
 using Case.Tests.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -35,23 +36,46 @@ public sealed class ReservationsControllerTests : IClassFixture<OptionsProvider>
         reservation.ShouldNotBeNull();
     }
 
-    //[Fact]
-    //public async Task Put_should_update_update_license_plate()
-    //{
-    //    //arrange
-    //    var reservationRequest = new ReserveParkingSpot.Command(Guid.Empty, Guid.Empty, UserId, "AB12345", ReservationDate);
-    //    _ = await _client.PostAsJsonAsync($"/parking-spots/{SpotId}/reservations", reservationRequest);
-    //    var reservationId = (await GetReservation(ReservationDate, SpotId, UserId)).Id;
+    [Fact]
+    public async Task Put_should_update_update_license_plate()
+    {
+        //arrange
+        var reservationRequest = new ReserveParkingSpot.Command(Guid.Empty, Guid.Empty, UserId, "AB12345", ReservationDate);
+        _ = await _client.PostAsJsonAsync($"/parking-spots/{SpotId}/reservations", reservationRequest);
+        var reservationId = (await GetReservation(ReservationDate, SpotId, UserId)).Id;
 
-    //    var updateReservationRequest = new ChangeReservationLicencePlate.Command(reservationId, "CD67890");
+        var updateReservationRequest = new ChangeReservationLicencePlate.Command(reservationId, "CD67890");
 
-    //    //act
-    //    _ = await _client.PutAsJsonAsync($"/parking-spots/{SpotId}/reservations", updateReservationRequest);
+        //act
+        _ = await _client.PutAsJsonAsync($"/parking-spots/{SpotId}/reservations", updateReservationRequest);
 
-    //    //assert
-    //    var reservation = await GetReservation(ReservationDate, SpotId, UserId);
-    //    reservation.LicensePlate.ShouldBe("CD67890");
-    //}
+        //assert
+        var reservation = await GetReservation(ReservationDate, SpotId, UserId);
+        reservation.LicensePlate.ShouldBe("CD67890");
+    }
+    
+    [Fact]
+    public async Task Put_should_throw_exception_when_reservation_not_found()
+    {
+        //arrange
+        var unusedReservationId = Guid.Parse("11111111-0000-0000-0000-000000000001");
+        var updateReservationRequest = new ChangeReservationLicencePlate.Command(unusedReservationId, "CD67890");
+
+        //act & Assert
+        await Assert.ThrowsAsync<WeeklyParkingSpotReservationNotFound>(() =>
+            _client.PutAsJsonAsync($"/parking-spots/{SpotId}/reservations", updateReservationRequest));
+    }
+    
+    [Fact]
+    public async Task Put_should_throw_exception_when_weekly_parking_spot_is_not_found()
+    {
+        //arrange
+        var unusedParkingSpotId = Guid.Parse("11111111-0000-0000-0000-000000000001");
+
+        //act & Assert
+        await Assert.ThrowsAsync<WeeklyParkingSpotNotFoundException>(() =>
+            _client.PutAsJsonAsync($"/parking-spots/{unusedParkingSpotId}/reservations", new ChangeReservationLicencePlate.Command()));
+    }
 
     private async Task<GetWeeklyParkingSpots.ReservationDto>? GetReservation(DateTime date, Guid spotId, Guid userId)
     {
@@ -64,5 +88,6 @@ public sealed class ReservationsControllerTests : IClassFixture<OptionsProvider>
 
     private void ConfigureServices(IServiceCollection services)
     {
+        
     }
 }
